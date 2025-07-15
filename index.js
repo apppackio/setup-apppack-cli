@@ -1,4 +1,5 @@
 const core = require("@actions/core");
+const os = require("os");
 const tc = require("@actions/tool-cache");
 const https = require("https");
 const { join } = require("path");
