@@ -12,9 +12,22 @@ async function run() {
     // Get the download URL for the release
     const releaseUrl = `https://api.github.com/repos/apppackio/apppack/releases/${version}`;
     const data = await downloadJson(releaseUrl);
-    if (!data.tag_name) {
-      throw new Error(`Invalid API response: ${JSON.stringify(data)}`);
+    
+    // Validate the API response
+    if (!data || !data.tag_name) {
+      throw new Error(
+        `Failed to fetch release information for version '${version}'. ` +
+        `Please check if the version exists or try 'latest'.`
+      );
     }
+    
+    if (!data.assets || data.assets.length === 0) {
+      throw new Error(
+        `No assets found for release ${data.tag_name}. ` +
+        `This may be a draft release or the release process may have failed.`
+      );
+    }
+    
     // strip the leading "v" from the tag name
     version = data.tag_name.slice(1);
     // Determine the platform-specific asset name
@@ -64,11 +77,30 @@ async function downloadJson(url) {
       { headers: { "User-Agent": "apppackio/setup-apppack" } },
       (res) => {
         let data = "";
+        
+        // Check for non-success status codes
+        if (res.statusCode !== 200) {
+          if (res.statusCode === 404) {
+            reject(new Error(`Release not found (404). Please check if the version exists.`));
+          } else {
+            reject(new Error(`GitHub API request failed with status ${res.statusCode}`));
+          }
+          return;
+        }
+        
         res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve(JSON.parse(data)));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Failed to parse GitHub API response: ${e.message}`));
+          }
+        });
       }
     );
-    req.on("error", reject);
+    req.on("error", (e) => {
+      reject(new Error(`Network error accessing GitHub API: ${e.message}`));
+    });
   });
 }
 
