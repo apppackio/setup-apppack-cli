@@ -11,6 +11,9 @@ async function run() {
     // Get the download URL for the release
     const releaseUrl = `https://api.github.com/repos/apppackio/apppack/releases/${version}`;
     const data = await downloadJson(releaseUrl);
+    if (!data.tag_name) {
+      throw new Error(`Invalid API response: ${JSON.stringify(data)}`);
+    }
     // strip the leading "v" from the tag name
     version = data.tag_name.slice(1);
     // Determine the platform-specific asset name
