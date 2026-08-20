@@ -12,5 +12,5 @@ outputs:
     description: The version of the AppPack CLI that was downloaded.
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'
